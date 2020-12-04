@@ -36,7 +36,7 @@ jobs:
         run: |
           set -x
           assets=()
-          for asset in fc-guest-aarch64/Image fc-guest-aarc64/rootfs.img; do
+          for asset in fc-guest-aarch64/Image fc-guest-aarch64/rootfs.img; do
             assets+=("-a" "$asset")
           done
           tag_name="${GITHUB_REF##*/}"
