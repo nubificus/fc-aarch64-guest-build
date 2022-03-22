@@ -2,14 +2,14 @@ FROM debian:latest as linux-builder
 
 # install prerequisites
 RUN apt-get update && apt-get install -y build-essential git libz-dev bin86 bison flex wget bc libelf-dev libssl-dev gcc-aarch64-linux-gnu
-RUN git clone https://github.com/torvalds/linux -b v4.20 --depth 1
+RUN git clone https://github.com/torvalds/linux -b v5.10 --depth 1
 
 # build linux kernel
 COPY aarch64_config.patch /linux/aarch64_config.patch
 WORKDIR /linux
-RUN wget https://raw.githubusercontent.com/firecracker-microvm/firecracker/master/resources/microvm-kernel-arm64.config
+RUN wget https://raw.githubusercontent.com/firecracker-microvm/firecracker/main/resources/guest_configs/microvm-kernel-arm64-5.10.config
 RUN patch -p0 < aarch64_config.patch
-RUN mv microvm-kernel-arm64.config arch/arm64/configs/microvm.config
+RUN mv microvm-kernel-arm64-5.10.config arch/arm64/configs/microvm.config
 RUN touch .config && make microvm.config && make Image -j$(nproc) 
 
 FROM linux-builder as virtio-builder
@@ -24,11 +24,11 @@ RUN make KDIR=/linux
 
 FROM ubuntu:latest as rootfs-builder
 
-COPY --from=virtio-builder /virtio-accel/virtio_accel.ko /lib/modules/4.20.0/
-RUN touch /lib/modules/4.20.0/modules.order
-RUN touch /lib/modules/4.20.0/modules.builtin
+COPY --from=virtio-builder /virtio-accel/virtio_accel.ko /lib/modules/5.10.0/
+RUN touch /lib/modules/5.10.0/modules.order
+RUN touch /lib/modules/5.10.0/modules.builtin
 RUN apt-get update && apt-get -y install init udev kmod
-RUN depmod 4.20.0
+RUN depmod 5.10.0
 RUN apt-get clean
 RUN sed s/root\:x\:/root\:\:/ -i /etc/passwd
 RUN sed s/root\:\*\:/root\:\:/ -i /etc/shadow
@@ -47,7 +47,7 @@ RUN apt-get update && apt-get install -y build-essential cmake         clang \
 	git
 
 WORKDIR /
-RUN git clone https://${TOKEN}:x-oauth-basic@github.com/cloudkernels/virtio-accel -b cleanup
+RUN git clone https://github.com/cloudkernels/virtio-accel
 RUN git clone https://github.com/cloudkernels/vaccelrt
 WORKDIR /vaccelrt
 RUN mkdir -p build
