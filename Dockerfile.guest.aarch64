@@ -22,7 +22,7 @@ RUN git clone https://github.com/cloudkernels/virtio-accel
 WORKDIR /virtio-accel
 RUN make KDIR=/linux
 
-FROM ubuntu:latest as rootfs-builder
+FROM ubuntu:20.04 as rootfs-builder
 
 COPY --from=virtio-builder /virtio-accel/virtio_accel.ko /lib/modules/5.10.0/
 RUN touch /lib/modules/5.10.0/modules.order
