@@ -10,7 +10,7 @@ WORKDIR /linux
 RUN wget https://raw.githubusercontent.com/firecracker-microvm/firecracker/main/resources/guest_configs/microvm-kernel-arm64-5.10.config
 RUN patch -p0 < aarch64_config.patch
 RUN mv microvm-kernel-arm64-5.10.config arch/arm64/configs/microvm.config
-RUN touch .config && make microvm.config && make Image -j$(nproc) 
+RUN touch .config && make microvm.config && make -j$(nproc) Image modules
 
 FROM linux-builder as virtio-builder
 # get virtio-accel source
@@ -48,13 +48,22 @@ RUN apt-get update && apt-get install -y build-essential cmake         clang \
 
 WORKDIR /
 RUN git clone https://github.com/cloudkernels/virtio-accel
-RUN git clone https://github.com/cloudkernels/vaccelrt
+RUN git clone https://github.com/cloudkernels/vaccelrt --recursive
 WORKDIR /vaccelrt
 RUN mkdir -p build
 WORKDIR /vaccelrt/build
-RUN cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_PLUGIN_VIRTIO=ON -DVIRTIO_ACCEL_ROOT=/virtio-accel -DBUILD_EXAMPLES=ON ..
+RUN cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_EXAMPLES=ON ..
 RUN make install
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/vaccel.conf
+
+
+WORKDIR /
+RUN git clone --recursive https://${TOKEN}:x-oauth-basic@github.com/nubificus/vaccelrt-plugin-virtio
+WORKDIR /vaccelrt-plugin-virtio
+RUN mkdir build
+WORKDIR /vaccelrt-plugin-virtio/build
+RUN cmake ../ -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release
+RUN cmake --build . --config Release &&  make install
 
 
 FROM scratch as artifacts
